@@ -1,4 +1,4 @@
-# Guitar Song Sheet App
+# Guitar songbook App
 
 A Flutter app for creating and managing personal guitar song sheets.
 
