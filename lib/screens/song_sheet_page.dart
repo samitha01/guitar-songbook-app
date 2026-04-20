@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:screenshot/screenshot.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'dart:async';
 
 class SongSheetPage extends StatefulWidget {
   final FileItem song;
@@ -24,6 +25,7 @@ class _SongSheetPageState extends State<SongSheetPage> {
   final TextEditingController _customChordController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ScreenshotController _screenshotController = ScreenshotController();
+  Timer? _scrollTimer;
 
   bool _isScrolling = false;
   bool _isEditing = false;
@@ -136,24 +138,29 @@ class _SongSheetPageState extends State<SongSheetPage> {
     }
   }
 
-  void _startAutoScroll() async {
-    while (_isScrolling && _scrollController.hasClients) {
-      await Future.delayed(const Duration(milliseconds: 80));
+  void _startAutoScroll() {
+    _scrollTimer?.cancel();
 
-      if (!_scrollController.hasClients) return;
+    _scrollTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!_isScrolling || !_scrollController.hasClients) {
+        timer.cancel();
+        return;
+      }
 
       final maxScroll = _scrollController.position.maxScrollExtent;
-      final nextOffset = _scrollController.offset + _scrollSpeed;
+      final nextOffset = _scrollController.offset + (_scrollSpeed * 0.5);
 
       if (nextOffset >= maxScroll) {
+        _scrollController.jumpTo(maxScroll);
         setState(() {
           _isScrolling = false;
         });
+        timer.cancel();
         return;
       }
 
       _scrollController.jumpTo(nextOffset);
-    }
+    });
   }
 
   void _showCustomChordDialog() {
@@ -223,6 +230,7 @@ class _SongSheetPageState extends State<SongSheetPage> {
 
   @override
   void dispose() {
+    _scrollTimer?.cancel();
     _scrollController.dispose();
     _lyricsController.dispose();
     _customChordController.dispose();
