@@ -26,7 +26,7 @@ class _SongSheetPageState extends State<SongSheetPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
 
   bool _isScrolling = false;
-  bool _isEditing = true;
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -35,6 +35,7 @@ class _SongSheetPageState extends State<SongSheetPage> {
     _currentKey = widget.song.songKey;
     _scrollSpeed = widget.song.scrollSpeed;
     _lyricsController = TextEditingController(text: widget.song.content);
+    _isEditing = widget.song.content.trim().isEmpty;
 
     _detectFirstKey();
 
