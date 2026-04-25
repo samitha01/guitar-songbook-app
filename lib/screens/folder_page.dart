@@ -13,7 +13,6 @@ class FolderContentsPage extends StatefulWidget {
 class _FolderContentsPageState extends State<FolderContentsPage> {
   final TextEditingController _fileController = TextEditingController();
 
-  // NEW: Function to delete a song from this folder
   void _confirmDeleteSong(int index) {
     final itemToDelete = widget.folder.subItems[index];
 
@@ -111,7 +110,6 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       ),
                     );
                   },
-                  // LONG PRESS TO DELETE
                   onLongPress: () => _confirmDeleteSong(index),
                 );
               },
@@ -121,5 +119,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         child: const Icon(Icons.note_add),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _fileController.dispose();
+    super.dispose();
   }
 }

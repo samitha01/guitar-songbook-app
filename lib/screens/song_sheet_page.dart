@@ -108,7 +108,7 @@ class _SongSheetPageState extends State<SongSheetPage> {
 
   bool _updateSongInTree(List<FileItem> items, FileItem targetSong) {
     for (int i = 0; i < items.length; i++) {
-      if (!items[i].isFolder && items[i].name == targetSong.name) {
+      if (!items[i].isFolder && items[i].id == targetSong.id) {
         items[i].content = targetSong.content;
         items[i].scrollSpeed = targetSong.scrollSpeed;
         items[i].songKey = targetSong.songKey;
@@ -127,6 +127,8 @@ class _SongSheetPageState extends State<SongSheetPage> {
     final Uint8List? image = await _screenshotController.capture();
     if (image != null) {
       final result = await ImageGallerySaverPlus.saveImage(image);
+      if (!mounted) return;
+
       if (result['isSuccess']) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

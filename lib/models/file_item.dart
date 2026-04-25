@@ -1,4 +1,5 @@
 class FileItem {
+  String id;
   String name;
   bool isFolder;
   String content;
@@ -7,16 +8,19 @@ class FileItem {
   String songKey;
 
   FileItem({
+    String? id,
     required this.name,
     required this.isFolder,
     this.content = "",
     List<FileItem>? subItems,
     this.scrollSpeed = 1.0,
     this.songKey = "C",
-  }) : subItems = subItems ?? [];
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       subItems = subItems ?? [];
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'isFolder': isFolder,
       'content': content,
@@ -33,6 +37,7 @@ class FileItem {
         .toList();
 
     return FileItem(
+      id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'],
       isFolder: json['isFolder'],
       content: json['content'] ?? "",

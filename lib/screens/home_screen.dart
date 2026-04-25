@@ -14,8 +14,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<FileItem> _myItems = []; // Master List
-  List<FileItem> _filteredItems = []; // What the user actually sees
+  List<FileItem> _myItems = [];
+  List<FileItem> _filteredItems = [];
 
   final TextEditingController _nameController = TextEditingController();
 
@@ -25,7 +25,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadData();
   }
 
-  // FIXED: Search now looks at everything in the master list
   void _runSearch(String query) {
     setState(() {
       if (query.isEmpty) {
@@ -51,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     String? jsonString = prefs.getString('guitar_library');
+
     if (jsonString != null) {
       Iterable l = jsonDecode(jsonString);
       setState(() {
@@ -70,7 +70,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // FIXED: Now works for both Folders and Files
   void _confirmDelete(int index) {
     final itemToDelete = _filteredItems[index];
 
@@ -90,7 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               setState(() {
                 _myItems.remove(itemToDelete);
-                _filteredItems = _myItems; // Reset search view after delete
+                _filteredItems = _myItems;
               });
               _saveData();
               Navigator.pop(context);
@@ -177,7 +176,6 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
-          // FIXED: Changed GridView to ListView for better readability
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -230,5 +228,11 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 }
