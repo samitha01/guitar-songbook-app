@@ -5,8 +5,8 @@ class ChordText extends StatelessWidget {
   final String text;
   const ChordText({super.key, required this.text});
 
-  static const Color sageDark = Color(0xFF5A7D63);
-  static const Color ink = Color(0xFF2C3A2F);
+  static const Color chordColor = Color(0xFF2F6F4F); // strong green
+  static const Color lyricColor = Color(0xFF2C3A2F);
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +18,11 @@ class ChordText extends StatelessWidget {
       onMatch: (m) {
         spans.add(
           TextSpan(
-            text: m.group(1),
+            text: "[${m.group(1)}]", // keep brackets for clarity
             style: GoogleFonts.jetBrainsMono(
-              color: sageDark,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+              color: chordColor,
+              fontWeight: FontWeight.w800,
+              fontSize: 20, // bigger than lyrics
               height: 1.6,
             ),
           ),
@@ -33,7 +33,11 @@ class ChordText extends StatelessWidget {
         spans.add(
           TextSpan(
             text: n,
-            style: GoogleFonts.inter(color: ink, fontSize: 18, height: 1.6),
+            style: GoogleFonts.inter(
+              color: lyricColor,
+              fontSize: 18,
+              height: 1.6,
+            ),
           ),
         );
         return "";

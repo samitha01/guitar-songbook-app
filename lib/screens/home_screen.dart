@@ -37,6 +37,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _renameController = TextEditingController();
 
   late final AnimationController _fabAnim;
   late final Animation<double> _fabRotation;
@@ -114,9 +115,166 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  void _confirmDelete(int index) {
-    final itemToDelete = _filteredItems[index];
+  void _showItemOptions(int index) {
+    final item = _filteredItems[index];
 
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: _cardBorder,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: item.isFolder ? _sageLight : _brownLight,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(
+                        color: item.isFolder ? _sageBorder : _brownBorder,
+                      ),
+                    ),
+                    child: Icon(
+                      item.isFolder
+                          ? Icons.folder_rounded
+                          : Icons.description_rounded,
+                      color: item.isFolder ? _sage : _brown,
+                      size: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      style: GoogleFonts.syne(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: _ink,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _OptionTile(
+                icon: Icons.edit_rounded,
+                title: "Rename",
+                color: _brown,
+                backgroundColor: _brownLight,
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRenameDialog(item);
+                },
+              ),
+              const SizedBox(height: 10),
+              _OptionTile(
+                icon: Icons.delete_rounded,
+                title: "Delete",
+                color: Colors.red,
+                backgroundColor: Colors.red.withOpacity(0.08),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteItem(item);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRenameDialog(FileItem item) {
+    _renameController.text = item.name;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _bg,
+        title: Text(
+          "Rename",
+          style: GoogleFonts.syne(fontWeight: FontWeight.w700, color: _ink),
+        ),
+        content: TextField(
+          controller: _renameController,
+          autofocus: true,
+          cursorColor: _sage,
+          decoration: InputDecoration(
+            hintText: "New name",
+            hintStyle: GoogleFonts.inter(color: _muted),
+            filled: true,
+            fillColor: _white,
+            prefixIcon: const Icon(Icons.edit_rounded, color: _brown),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: _cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: _brown, width: 1.5),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _renameController.clear();
+              Navigator.pop(context);
+            },
+            child: Text("Cancel", style: GoogleFonts.inter(color: _muted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brown,
+              foregroundColor: _white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onPressed: () {
+              final newName = _renameController.text.trim();
+
+              if (newName.isNotEmpty) {
+                setState(() {
+                  item.name = newName;
+                  _runSearch(_searchController.text);
+                });
+
+                _saveData();
+                _renameController.clear();
+                Navigator.pop(context);
+              }
+            },
+            child: Text(
+              "Save",
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteItem(FileItem itemToDelete) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -136,18 +294,22 @@ class _MyHomePageState extends State<MyHomePage>
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _myItems.remove(itemToDelete);
-                _filteredItems = _myItems;
-              });
-              _saveData();
               Navigator.pop(context);
+              _deleteItem(itemToDelete);
             },
             child: Text("Delete", style: GoogleFonts.inter(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  void _deleteItem(FileItem itemToDelete) {
+    setState(() {
+      _myItems.remove(itemToDelete);
+      _runSearch(_searchController.text);
+    });
+    _saveData();
   }
 
   void _createItem({required bool isFolder}) {
@@ -275,7 +437,7 @@ class _MyHomePageState extends State<MyHomePage>
                               maxCrossAxisExtent: 250,
                               crossAxisSpacing: 10,
                               mainAxisSpacing: 10,
-                              childAspectRatio: 2.5,
+                              mainAxisExtent: 115,
                             ),
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final item = _filteredItems[index];
@@ -283,7 +445,7 @@ class _MyHomePageState extends State<MyHomePage>
                           return _GridItemCard(
                             item: item,
                             onTap: () => _openItem(item),
-                            onLongPress: () => _confirmDelete(index),
+                            onLongPress: () => _showItemOptions(index),
                           );
                         }, childCount: _filteredItems.length),
                       ),
@@ -467,6 +629,7 @@ class _MyHomePageState extends State<MyHomePage>
     _fabAnim.dispose();
     _searchController.dispose();
     _nameController.dispose();
+    _renameController.dispose();
     super.dispose();
   }
 }
@@ -612,6 +775,63 @@ class _PopButton extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final Color backgroundColor;
+  final VoidCallback onTap;
+
+  const _OptionTile({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.backgroundColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _cardBorder),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: GoogleFonts.syne(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _ink,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

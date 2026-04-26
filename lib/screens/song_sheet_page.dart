@@ -143,6 +143,7 @@ class _SongSheetPageState extends State<SongSheetPage> {
 
   Future<void> _printToGallery() async {
     final Uint8List? image = await _screenshotController.capture();
+
     if (image != null) {
       final result = await ImageGallerySaverPlus.saveImage(image);
       if (!mounted) return;
@@ -263,75 +264,84 @@ class _SongSheetPageState extends State<SongSheetPage> {
         color: _white,
         border: Border(bottom: BorderSide(color: _cardBorder, width: 1)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _TopIconBtn(
-              onTap: () => setState(() => _isEditing = !_isEditing),
-              color: _sageLight,
-              borderColor: _sageBorder,
-              child: Icon(
-                _isEditing ? Icons.remove_red_eye : Icons.edit_rounded,
-                color: _sage,
-                size: 19,
-              ),
-            ),
-            const SizedBox(width: 14),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 160),
-              child: Text(
-                widget.song.name,
-                style: GoogleFonts.syne(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _ink,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _TopIconBtn(
+                onTap: () => setState(() => _isEditing = !_isEditing),
+                color: _sageLight,
+                borderColor: _sageBorder,
+                child: Icon(
+                  _isEditing ? Icons.remove_red_eye : Icons.edit_rounded,
+                  color: _sage,
+                  size: 19,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(width: 22),
-
-            _SectionLabel('Key'),
-            const SizedBox(width: 8),
-            _PillControl(
-              onMinus: () => _transpose(-1),
-              onPlus: () => _transpose(1),
-              label: _currentKey,
-            ),
-
-            _Divider(),
-
-            _SectionLabel('Speed'),
-            const SizedBox(width: 8),
-            _PillControl(
-              onMinus: _speedDown,
-              onPlus: _speedUp,
-              label: _scrollSpeed.toStringAsFixed(1),
-            ),
-
-            _Divider(),
-
-            _ScrollBtn(isScrolling: _isScrolling, onTap: _toggleScroll),
-
-            _Divider(),
-
-            _TopIconBtn(
-              onTap: _manualSave,
-              color: Colors.transparent,
-              borderColor: _cardBorder,
-              child: const Icon(Icons.save_rounded, color: _muted, size: 19),
-            ),
-            const SizedBox(width: 8),
-            _TopIconBtn(
-              onTap: _printToGallery,
-              color: Colors.transparent,
-              borderColor: _cardBorder,
-              child: const Icon(Icons.print_rounded, color: _muted, size: 19),
-            ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.song.name,
+                  style: GoogleFonts.syne(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: _ink,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _TopIconBtn(
+                onTap: _manualSave,
+                color: Colors.transparent,
+                borderColor: _cardBorder,
+                child: const Icon(Icons.save_rounded, color: _muted, size: 19),
+              ),
+              const SizedBox(width: 8),
+              _TopIconBtn(
+                onTap: _printToGallery,
+                color: Colors.transparent,
+                borderColor: _cardBorder,
+                child: const Icon(Icons.print_rounded, color: _muted, size: 19),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SectionLabel('Key'),
+                  const SizedBox(width: 8),
+                  _PillControl(
+                    onMinus: () => _transpose(-1),
+                    onPlus: () => _transpose(1),
+                    label: _currentKey,
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SectionLabel('Speed'),
+                  const SizedBox(width: 8),
+                  _PillControl(
+                    onMinus: _speedDown,
+                    onPlus: _speedUp,
+                    label: _scrollSpeed.toStringAsFixed(1),
+                  ),
+                ],
+              ),
+              _ScrollBtn(isScrolling: _isScrolling, onTap: _toggleScroll),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -409,7 +419,7 @@ class _PillControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
+      height: 38,
       decoration: BoxDecoration(
         color: _bg,
         borderRadius: BorderRadius.circular(12),
@@ -419,9 +429,9 @@ class _PillControl extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _PillBtn(label: '−', onTap: onMinus),
-          Container(width: 1, height: 40, color: _cardBorder),
+          Container(width: 1, height: 38, color: _cardBorder),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 11),
             child: Text(
               label,
               style: GoogleFonts.syne(
@@ -431,7 +441,7 @@ class _PillControl extends StatelessWidget {
               ),
             ),
           ),
-          Container(width: 1, height: 40, color: _cardBorder),
+          Container(width: 1, height: 38, color: _cardBorder),
           _PillBtn(label: '+', onTap: onPlus),
         ],
       ),
@@ -450,8 +460,8 @@ class _PillBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 36,
-        height: 40,
+        width: 34,
+        height: 38,
         child: Center(
           child: Text(
             label,
@@ -479,47 +489,24 @@ class _ScrollBtn extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 40,
+        height: 38,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: isScrolling ? _sageDark : _sageLight,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: isScrolling ? _sageDark : _sageBorder),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isScrolling
-                  ? Icons.stop_rounded
-                  : Icons.keyboard_arrow_down_rounded,
+        child: Center(
+          child: Text(
+            isScrolling ? "Stop" : "Scroll",
+            style: GoogleFonts.syne(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
               color: isScrolling ? _white : _sageDark,
-              size: 18,
             ),
-            const SizedBox(width: 5),
-            Text(
-              isScrolling ? "Stop" : "Scroll",
-              style: GoogleFonts.syne(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isScrolling ? _white : _sageDark,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 24,
-      color: _cardBorder,
-      margin: const EdgeInsets.symmetric(horizontal: 14),
     );
   }
 }
