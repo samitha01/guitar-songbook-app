@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ChordText extends StatelessWidget {
   final String text;
   const ChordText({super.key, required this.text});
+
+  static const Color sageDark = Color(0xFF5A7D63);
+  static const Color ink = Color(0xFF2C3A2F);
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +18,12 @@ class ChordText extends StatelessWidget {
       onMatch: (m) {
         spans.add(
           TextSpan(
-            text: m.group(0),
-            style: const TextStyle(
-              color: Colors.blue,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
+            text: m.group(1),
+            style: GoogleFonts.jetBrainsMono(
+              color: sageDark,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              height: 1.6,
             ),
           ),
         );
@@ -28,11 +33,7 @@ class ChordText extends StatelessWidget {
         spans.add(
           TextSpan(
             text: n,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-              height: 1.5,
-            ),
+            style: GoogleFonts.inter(color: ink, fontSize: 18, height: 1.6),
           ),
         );
         return "";
@@ -40,7 +41,7 @@ class ChordText extends StatelessWidget {
     );
 
     return RichText(
-      textAlign: TextAlign.left, // FIXED: Explicitly align left
+      textAlign: TextAlign.left,
       text: TextSpan(children: spans),
     );
   }
