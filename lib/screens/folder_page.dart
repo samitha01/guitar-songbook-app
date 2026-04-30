@@ -25,12 +25,44 @@ class FolderContentsPage extends StatefulWidget {
   State<FolderContentsPage> createState() => _FolderContentsPageState();
 }
 
-class _FolderContentsPageState extends State<FolderContentsPage> {
+class _FolderContentsPageState extends State<FolderContentsPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _fileController = TextEditingController();
   final TextEditingController _renameController = TextEditingController();
 
-  void _showSongOptions(int index) {
-    final song = widget.folder.subItems[index];
+  bool _fabOpen = false;
+  late final AnimationController _fabAnim;
+  late final Animation<double> _fabRotation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _fabAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+
+    _fabRotation = Tween<double>(
+      begin: 0,
+      end: 0.125,
+    ).animate(CurvedAnimation(parent: _fabAnim, curve: Curves.easeInOut));
+  }
+
+  void _toggleFab() {
+    setState(() => _fabOpen = !_fabOpen);
+    _fabOpen ? _fabAnim.forward() : _fabAnim.reverse();
+  }
+
+  void _closeFab() {
+    if (_fabOpen) {
+      setState(() => _fabOpen = false);
+      _fabAnim.reverse();
+    }
+  }
+
+  void _showItemOptions(int index) {
+    final item = widget.folder.subItems[index];
 
     showModalBottomSheet(
       context: context,
@@ -59,20 +91,24 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: _brownLight,
+                      color: item.isFolder ? _sageLight : _brownLight,
                       borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: _brownBorder),
+                      border: Border.all(
+                        color: item.isFolder ? _sageBorder : _brownBorder,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.description_rounded,
-                      color: _brown,
+                    child: Icon(
+                      item.isFolder
+                          ? Icons.folder_rounded
+                          : Icons.description_rounded,
+                      color: item.isFolder ? _sage : _brown,
                       size: 21,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      song.name,
+                      item.name,
                       style: GoogleFonts.syne(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -91,7 +127,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 backgroundColor: _brownLight,
                 onTap: () {
                   Navigator.pop(context);
-                  _showRenameDialog(song);
+                  _showRenameDialog(item);
                 },
               ),
               const SizedBox(height: 10),
@@ -102,7 +138,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 backgroundColor: Colors.red.withOpacity(0.08),
                 onTap: () {
                   Navigator.pop(context);
-                  _confirmDeleteSong(song);
+                  _confirmDeleteItem(item);
                 },
               ),
             ],
@@ -112,8 +148,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  void _showRenameDialog(FileItem song) {
-    _renameController.text = song.name;
+  void _showRenameDialog(FileItem item) {
+    _renameController.text = item.name;
 
     showDialog(
       context: context,
@@ -165,7 +201,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
               if (newName.isNotEmpty) {
                 setState(() {
-                  song.name = newName;
+                  item.name = newName;
                 });
 
                 _renameController.clear();
@@ -182,17 +218,17 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  void _confirmDeleteSong(FileItem song) {
+  void _confirmDeleteItem(FileItem item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: _bg,
         title: Text(
-          "Delete Song?",
+          item.isFolder ? "Delete Folder?" : "Delete Song?",
           style: GoogleFonts.syne(fontWeight: FontWeight.w700, color: _ink),
         ),
         content: Text(
-          "Are you sure you want to delete '${song.name}'?",
+          "Are you sure you want to delete '${item.name}'?",
           style: GoogleFonts.inter(color: _inkDeep),
         ),
         actions: [
@@ -203,7 +239,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteSong(song);
+              _deleteItem(item);
             },
             child: Text("Delete", style: GoogleFonts.inter(color: Colors.red)),
           ),
@@ -212,13 +248,26 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  void _deleteSong(FileItem song) {
+  void _deleteItem(FileItem item) {
     setState(() {
-      widget.folder.subItems.remove(song);
+      widget.folder.subItems.remove(item);
     });
   }
 
-  void _addNewFile() {
+  void _createItem({required bool isFolder}) {
+    if (_fileController.text.trim().isNotEmpty) {
+      setState(() {
+        widget.folder.subItems.add(
+          FileItem(name: _fileController.text.trim(), isFolder: isFolder),
+        );
+      });
+
+      _fileController.clear();
+      Navigator.pop(context);
+    }
+  }
+
+  void _showCreateDialog({required bool isFolder}) {
     _fileController.clear();
 
     showDialog(
@@ -226,25 +275,31 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       builder: (context) => AlertDialog(
         backgroundColor: _bg,
         title: Text(
-          "New Sheet File",
+          isFolder ? "New Folder" : "New Sheet File",
           style: GoogleFonts.syne(fontWeight: FontWeight.w700, color: _ink),
         ),
         content: TextField(
           controller: _fileController,
           cursorColor: _sage,
           decoration: InputDecoration(
-            hintText: "Song name",
+            hintText: isFolder ? "Folder name" : "Song name",
             hintStyle: GoogleFonts.inter(color: _muted),
             filled: true,
             fillColor: _white,
-            prefixIcon: const Icon(Icons.description_rounded, color: _brown),
+            prefixIcon: Icon(
+              isFolder ? Icons.folder_rounded : Icons.description_rounded,
+              color: isFolder ? _sage : _brown,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: _cardBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: _brown, width: 1.5),
+              borderSide: BorderSide(
+                color: isFolder ? _sage : _brown,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -258,27 +313,14 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brown,
+              backgroundColor: isFolder ? _sageDark : _brown,
               foregroundColor: _white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            onPressed: () {
-              if (_fileController.text.trim().isNotEmpty) {
-                setState(() {
-                  widget.folder.subItems.add(
-                    FileItem(
-                      name: _fileController.text.trim(),
-                      isFolder: false,
-                    ),
-                  );
-                });
-                _fileController.clear();
-                Navigator.pop(context);
-              }
-            },
+            onPressed: () => _createItem(isFolder: isFolder),
             child: Text(
               "Create",
               style: GoogleFonts.inter(fontWeight: FontWeight.w600),
@@ -289,55 +331,68 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  void _openSong(FileItem song) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SongSheetPage(song: song)),
-    );
+  void _openItem(FileItem item) {
+    if (item.isFolder) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FolderContentsPage(folder: item),
+        ),
+      ).then((_) => setState(() {}));
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SongSheetPage(song: item)),
+      ).then((_) => setState(() {}));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader(context)),
-            SliverToBoxAdapter(child: _buildSectionLabel()),
-            if (widget.folder.subItems.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _buildEmptyState(),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 250,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    mainAxisExtent: 115,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final song = widget.folder.subItems[index];
+    return GestureDetector(
+      onTap: _closeFab,
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: _buildHeader(context)),
+                  SliverToBoxAdapter(child: _buildSectionLabel()),
+                  if (widget.folder.subItems.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmptyState(),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 250,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              mainAxisExtent: 115,
+                            ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final item = widget.folder.subItems[index];
 
-                    return _GridSongCard(
-                      song: song,
-                      onTap: () => _openSong(song),
-                      onLongPress: () => _showSongOptions(index),
-                    );
-                  }, childCount: widget.folder.subItems.length),
-                ),
+                          return _GridItemCard(
+                            item: item,
+                            onTap: () => _openItem(item),
+                            onLongPress: () => _showItemOptions(index),
+                          );
+                        }, childCount: widget.folder.subItems.length),
+                      ),
+                    ),
+                ],
               ),
-          ],
+              _buildFabMenu(),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: _sageDark,
-        onPressed: _addNewFile,
-        child: const Icon(Icons.note_add_rounded, color: _white),
       ),
     );
   }
@@ -372,7 +427,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
       child: Text(
-        'S H E E T S',
+        'C O N T E N T S',
         style: GoogleFonts.syne(
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
@@ -386,31 +441,108 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   Widget _buildEmptyState() {
     return Center(
       child: Text(
-        "This folder is empty.\nTap + to add a song.",
+        "This folder is empty.\nTap + to add a folder or song.",
         textAlign: TextAlign.center,
         style: GoogleFonts.inter(color: _muted, fontSize: 14, height: 1.5),
       ),
     );
   }
 
+  Widget _buildFabMenu() {
+    return Positioned(
+      right: 24,
+      bottom: 28,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSlide(
+            offset: _fabOpen ? Offset.zero : const Offset(0, 0.3),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: _fabOpen ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: IgnorePointer(
+                ignoring: !_fabOpen,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _PopButton(
+                      label: 'New sheet file',
+                      isFile: true,
+                      onTap: () {
+                        _closeFab();
+                        _showCreateDialog(isFolder: false);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _PopButton(
+                      label: 'New folder',
+                      isFile: false,
+                      onTap: () {
+                        _closeFab();
+                        _showCreateDialog(isFolder: true);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: _toggleFab,
+            child: AnimatedBuilder(
+              animation: _fabRotation,
+              builder: (context, child) => Transform.rotate(
+                angle: _fabRotation.value * 2 * 3.14159,
+                child: child,
+              ),
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: _sageDark,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _sageDark.withOpacity(0.28),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.add, color: _white, size: 26),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _fabAnim.dispose();
     _fileController.dispose();
     _renameController.dispose();
     super.dispose();
   }
 }
 
-class _GridSongCard extends StatelessWidget {
-  final FileItem song;
+class _GridItemCard extends StatelessWidget {
+  final FileItem item;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  const _GridSongCard({
-    required this.song,
+  const _GridItemCard({
+    required this.item,
     required this.onTap,
     required this.onLongPress,
   });
+
+  bool get isFolder => item.isFolder;
 
   @override
   Widget build(BuildContext context) {
@@ -431,9 +563,9 @@ class _GridSongCard extends StatelessWidget {
             children: [
               Container(
                 height: 4,
-                decoration: const BoxDecoration(
-                  color: _brown,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: isFolder ? _sage : _brown,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(15),
                     topRight: Radius.circular(15),
                   ),
@@ -448,19 +580,23 @@ class _GridSongCard extends StatelessWidget {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: _brownLight,
+                        color: isFolder ? _sageLight : _brownLight,
                         borderRadius: BorderRadius.circular(11),
-                        border: Border.all(color: _brownBorder),
+                        border: Border.all(
+                          color: isFolder ? _sageBorder : _brownBorder,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.description_rounded,
-                        color: _brown,
+                      child: Icon(
+                        isFolder
+                            ? Icons.folder_rounded
+                            : Icons.description_rounded,
+                        color: isFolder ? _sage : _brown,
                         size: 20,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      song.name,
+                      item.name,
                       style: GoogleFonts.syne(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -475,6 +611,67 @@ class _GridSongCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PopButton extends StatelessWidget {
+  final String label;
+  final bool isFile;
+  final VoidCallback onTap;
+
+  const _PopButton({
+    required this.label,
+    required this.isFile,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: _cardBorder, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: isFile ? _brownLight : _sageLight,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                isFile ? Icons.description_rounded : Icons.folder_rounded,
+                color: isFile ? _brown : _sage,
+                size: 15,
+              ),
+            ),
+            const SizedBox(width: 9),
+            Text(
+              label,
+              style: GoogleFonts.syne(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: _ink,
+              ),
+            ),
+          ],
         ),
       ),
     );

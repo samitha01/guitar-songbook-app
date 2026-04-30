@@ -58,12 +58,28 @@ class _MyHomePageState extends State<MyHomePage>
     ).animate(CurvedAnimation(parent: _fabAnim, curve: Curves.easeInOut));
   }
 
+  List<FileItem> _getAllItems(List<FileItem> items) {
+    List<FileItem> result = [];
+
+    for (final item in items) {
+      result.add(item);
+
+      if (item.isFolder && item.subItems.isNotEmpty) {
+        result.addAll(_getAllItems(item.subItems));
+      }
+    }
+
+    return result;
+  }
+
   void _runSearch(String query) {
     setState(() {
       if (query.isEmpty) {
         _filteredItems = _myItems;
       } else {
-        _filteredItems = _myItems
+        final allItems = _getAllItems(_myItems);
+
+        _filteredItems = allItems
             .where(
               (item) => item.name.toLowerCase().contains(query.toLowerCase()),
             )
@@ -113,6 +129,21 @@ class _MyHomePageState extends State<MyHomePage>
       setState(() => _fabOpen = false);
       _fabAnim.reverse();
     }
+  }
+
+  bool _removeItemFromTree(List<FileItem> items, FileItem target) {
+    if (items.remove(target)) {
+      return true;
+    }
+
+    for (final item in items) {
+      if (item.isFolder && item.subItems.isNotEmpty) {
+        final removed = _removeItemFromTree(item.subItems, target);
+        if (removed) return true;
+      }
+    }
+
+    return false;
   }
 
   void _showItemOptions(int index) {
@@ -306,7 +337,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   void _deleteItem(FileItem itemToDelete) {
     setState(() {
-      _myItems.remove(itemToDelete);
+      _removeItemFromTree(_myItems, itemToDelete);
       _runSearch(_searchController.text);
     });
     _saveData();
@@ -400,12 +431,18 @@ class _MyHomePageState extends State<MyHomePage>
         MaterialPageRoute(
           builder: (context) => FolderContentsPage(folder: item),
         ),
-      ).then((_) => _saveData());
+      ).then((_) {
+        _saveData();
+        _runSearch(_searchController.text);
+      });
     } else {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SongSheetPage(song: item)),
-      ).then((_) => _saveData());
+      ).then((_) {
+        _saveData();
+        _runSearch(_searchController.text);
+      });
     }
   }
 
